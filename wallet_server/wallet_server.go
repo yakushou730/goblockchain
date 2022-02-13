@@ -2,10 +2,13 @@ package main
 
 import (
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"path"
 	"strconv"
+
+	"github.com/yakushou730/goblockchain/wallet"
 )
 
 const tempDir = "wallet_server/templates"
@@ -39,7 +42,21 @@ func (ws *WalletServer) Index(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (ws *WalletServer) Wallet(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		w.Header().Add("Content-Type", "application/json")
+		myWallet := wallet.NewWallet()
+		m, _ := myWallet.MarshalJSON()
+		io.WriteString(w, string(m[:]))
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
 func (ws *WalletServer) Run() {
 	http.HandleFunc("/", ws.Index)
+	http.HandleFunc("/wallet", ws.Wallet)
 	log.Fatalln(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(ws.Port())), nil))
 }
